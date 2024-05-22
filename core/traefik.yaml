@@ -1,0 +1,63 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: traefik
+---
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  chart: traefik
+  version: "v28.1.0"
+  repo: https://traefik.github.io/charts
+  targetNamespace: traefik
+  bootstrap: true
+  valuesContent: |-
+    image:
+      tag: 
+    deployment:
+      replicas: 2
+    globalArguments: []
+    service:
+      enabled: true
+      type: LoadBalancer
+    ports:
+      web:
+        redirectTo:
+          port: websecure
+        proxyProtocol:
+          trustedIPs:
+            - 127.0.0.1/32
+            - 10.0.0.0/8
+        forwardedHeaders:
+          trustedIPs:
+            - 127.0.0.1/32
+            - 10.0.0.0/8
+      websecure:
+        proxyProtocol:
+          trustedIPs:
+            - 127.0.0.1/32
+            - 10.0.0.0/8
+        forwardedHeaders:
+          trustedIPs:
+            - 127.0.0.1/32
+            - 10.0.0.0/8
+    podDisruptionBudget:
+      enabled: true
+      maxUnavailable: 33%
+    additionalArguments:
+      - "--providers.kubernetesingress.ingressendpoint.publishedservice=traefik/traefik"
+    resources:
+      requests:
+        cpu: "100m"
+        memory: "50Mi"
+      limits:
+        cpu: "300m"
+        memory: "150Mi"
+    autoscaling:
+      enabled: true
+      minReplicas: 2
+      maxReplicas: 10
